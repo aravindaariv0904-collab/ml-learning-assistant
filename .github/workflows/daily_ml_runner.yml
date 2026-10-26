@@ -82,8 +82,8 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # Stage state updates and new distributions
-          git add state.json dist_html/ dist_pptx/ dist_notes/
+          # Stage state updates (dist artifacts are uploaded as artifacts and synced to Google Drive)
+          git add state.json
           
           if git diff --staged --quiet; then
             echo "No state or artifact modifications to commit."

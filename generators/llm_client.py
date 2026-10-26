@@ -333,16 +333,10 @@ Each slide must have:
 - "diagram_text": optional string (ASCII or workflow arrow notation for "diagram" slides)
 """
         response_text = self.generate_completion(prompt)
-        cleaned = re.sub(r"^```(?:json)?\n", "", response_text.strip(), flags=re.MULTILINE)
-        cleaned = re.sub(r"\n```$", "", cleaned.strip(), flags=re.MULTILINE)
-
         try:
-            return json.loads(cleaned)
-        except json.JSONDecodeError:
-            match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
-            if match:
-                return json.loads(match.group(1))
-            logger.warning("Failed to decode LLM JSON for presentation. Using deterministic fallback generator.")
+            return self._clean_and_parse_json(response_text, is_array=False)
+        except Exception as e:
+            logger.warning(f"Failed to decode LLM JSON for presentation ({e}). Using deterministic fallback generator.")
             return self._generate_fallback_presentation_json(day_info)
 
     def generate_quiz_json(self, day_info: Dict[str, Any], markdown_content: str) -> List[Dict[str, Any]]:
@@ -372,16 +366,49 @@ Return ONLY a valid JSON array of questions without markdown wrapping:
 ]
 """
         response_text = self.generate_completion(prompt)
-        cleaned = re.sub(r"^```(?:json)?\n", "", response_text.strip(), flags=re.MULTILINE)
-        cleaned = re.sub(r"\n```$", "", cleaned.strip(), flags=re.MULTILINE)
+        try:
+            return self._clean_and_parse_json(response_text, is_array=True)
+        except Exception as e:
+            logger.warning(f"Failed to decode LLM JSON for quiz ({e}). Using deterministic fallback generator.")
+            return self._generate_fallback_quiz_json(day_info)
+
+    def _clean_and_parse_json(self, raw_text: str, is_array: bool = False) -> Any:
+        """
+        Robustly parses JSON from LLM output:
+        1. Strips markdown fences (```json ... ``` or ``` ... ```).
+        2. Isolates the outermost JSON structure ({...} or [...]).
+        3. Strips trailing commas (e.g. `[1, 2, ]` or `{"a": 1, }`).
+        4. Handles JSONDecodeError with fallback regex before failing.
+        """
+        if not raw_text:
+            raise ValueError("Empty response text from LLM")
+
+        cleaned = raw_text.strip()
+        # Strip markdown fences
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.MULTILINE)
+        cleaned = re.sub(r"\s*```$", "", cleaned, flags=re.MULTILINE)
+        cleaned = cleaned.strip()
+
+        # Find outer boundaries
+        start_char, end_char = ("[", "]") if is_array else ("{", "}")
+        start_idx = cleaned.find(start_char)
+        end_idx = cleaned.rfind(end_char)
+
+        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+            cleaned = cleaned[start_idx : end_idx + 1]
+
+        # Fix trailing commas before closing braces/brackets: e.g. ", \n }" or ", ]"
+        cleaned = re.sub(r",\s*([\]\}])", r"\1", cleaned)
 
         try:
             return json.loads(cleaned)
-        except Exception:
-            match = re.search(r"(\[.*\])", cleaned, re.DOTALL)
-            if match:
-                return json.loads(match.group(1))
-            return self._generate_fallback_quiz_json(day_info)
+        except json.JSONDecodeError as err:
+            logger.warning(f"Initial JSON parse failed: {err}. Attempting secondary regex repair...")
+            repaired = re.sub(r",\s*([\]\}])", r"\1", cleaned)
+            try:
+                return json.loads(repaired)
+            except json.JSONDecodeError:
+                raise
 
     def _generate_offline_content(self, prompt: str) -> str:
         """

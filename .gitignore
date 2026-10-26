@@ -1,7 +1,10 @@
 # Environments and Secrets
 .env
 *.env
+service-account.json
 service-account*.json
+credentials.json
+token.json
 *.key
 
 # Python
@@ -29,8 +32,14 @@ wheels/
 # Virtual environments
 venv/
 .venv/
+.venv*/
 env/
 ENV/
+
+# Distribution artifacts
+dist_html/
+dist_pptx/
+dist_notes/
 
 # Sandbox temporary outputs
 tmp/

@@ -468,26 +468,34 @@ where $n$ is sample size and $p$ is the number of features. It only increases if
             }
         }
 
-        target_day["status"] = "completed"
-        target_day["completed_at"] = delivery_record["timestamp"]
-        target_day["delivery_record"] = delivery_record
+        # Update State in state.json only if not in dry-run mode and validation passed
+        if not self.dry_run:
+            if validation_result.get("is_valid", False):
+                target_day["status"] = "completed"
+                target_day["completed_at"] = delivery_record["timestamp"]
+                target_day["delivery_record"] = delivery_record
 
-        if day_num not in self.state["completed_days"]:
-            self.state["completed_days"].append(day_num)
+                if day_num not in self.state["completed_days"]:
+                    self.state["completed_days"].append(day_num)
 
-        # Advance current_day to next uncompleted day (or stay at 30 if completed)
-        if not self.force_day:
-            next_day = day_num + 1 if day_num < self.state.get("total_days", 30) else 30
-            self.state["current_day"] = next_day
+                # Advance current_day to next uncompleted day (or stay at 30 if completed)
+                if not self.force_day:
+                    next_day = day_num + 1 if day_num < self.state.get("total_days", 30) else 30
+                    self.state["current_day"] = next_day
+            else:
+                target_day["status"] = "failed_validation"
+                logger.warning(f"Day {day_num} failed sandbox validation. State current_day will NOT advance.")
 
-        self.state["execution_history"].append({
-            "day": day_num,
-            "title": title,
-            "timestamp": delivery_record["timestamp"],
-            "status": "success" if validation_result["is_valid"] else "needs_review"
-        })
+            self.state["execution_history"].append({
+                "day": day_num,
+                "title": title,
+                "timestamp": delivery_record["timestamp"],
+                "status": "success" if validation_result["is_valid"] else "needs_review"
+            })
 
-        self._save_state()
+            self._save_state()
+        else:
+            logger.info("[DRY-RUN] Safe verification complete. State file preserved without permanent mutations.")
 
         elapsed = (datetime.datetime.now() - start_time).total_seconds()
         logger.info(f"============================================================")

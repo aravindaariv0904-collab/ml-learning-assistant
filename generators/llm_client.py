@@ -13,7 +13,7 @@ from typing import Dict, Any, List, Optional
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(override=True)
 except ImportError:
     pass
 
@@ -30,7 +30,7 @@ class LLMClient:
 
     def __init__(self):
         self.openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
-        self.openrouter_model = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free")
+        self.openrouter_model = os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3.5-lightning:free")
 
         self.gemini_api_key = os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY")
         self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
@@ -134,16 +134,14 @@ class LLMClient:
             messages.append({"role": "system", "content": system_instruction})
         messages.append({"role": "user", "content": prompt})
 
-        # Provide fallback models within OpenRouter in case a free model is rate-limited
+        # Provide fallback models within OpenRouter in case a free model is rate-limited (max 3 allowed)
         free_models_fallback = [
             self.openrouter_model,
-            "google/gemini-2.0-flash-exp:free",
-            "meta-llama/llama-3.3-70b-instruct:free",
-            "deepseek/deepseek-r1:free",
-            "qwen/qwen-2.5-72b-instruct:free"
+            "nvidia/nemotron-3.5-lightning:free",
+            "liquid/lfm-2.5-2.6b:free"
         ]
-        # De-duplicate while preserving order
-        unique_models = list(dict.fromkeys(free_models_fallback))
+        # De-duplicate while preserving order, max 3 items
+        unique_models = list(dict.fromkeys(free_models_fallback))[:3]
 
         payload = {
             "model": self.openrouter_model,

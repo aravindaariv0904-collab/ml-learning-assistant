@@ -33,7 +33,7 @@ class LLMClient:
         self.openrouter_model = os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3.5-lightning:free")
 
         self.gemini_api_key = os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY")
-        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
         self.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
         if os.getenv("AI_API_KEY", "").startswith("sk-ant-"):
@@ -163,33 +163,55 @@ class LLMClient:
     def _call_gemini(self, prompt: str, system_instruction: Optional[str] = None) -> str:
         """
         Calls Google Gemini API using google-genai SDK or REST API fallback.
+        Includes automatic fallback across modern models (gemini-3.5-flash-lite, gemini-3-flash-preview, gemini-flash-latest).
         """
-        try:
-            from google import genai
-            from google.genai import types
+        models_to_try = [
+            self.gemini_model,
+            "gemini-3.5-flash-lite",
+            "gemini-3-flash-preview",
+            "gemini-flash-latest"
+        ]
+        # De-duplicate while preserving order
+        unique_models = list(dict.fromkeys(models_to_try))
 
-            client = genai.Client(api_key=self.gemini_api_key)
-            config = types.GenerateContentConfig(
-                temperature=0.2,
-                system_instruction=system_instruction,
-            )
-            response = client.models.generate_content(
-                model=self.gemini_model,
-                contents=prompt,
-                config=config,
-            )
-            return response.text
-        except Exception as e:
-            logger.warning(f"google-genai SDK call failed ({e}); falling back to Gemini REST API.")
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent?key={self.gemini_api_key}"
-            payload = {
-                "contents": [{"parts": [{"text": (system_instruction + "\n\n" if system_instruction else "") + prompt}]}],
-                "generationConfig": {"temperature": 0.2}
-            }
-            res = requests.post(url, json=payload, timeout=60)
-            res.raise_for_status()
-            data = res.json()
-            return data["candidates"][0]["content"]["parts"][0]["text"]
+        last_error = None
+        for model in unique_models:
+            # 1. Try google-genai SDK
+            try:
+                from google import genai
+                from google.genai import types
+
+                client = genai.Client(api_key=self.gemini_api_key)
+                config = types.GenerateContentConfig(
+                    temperature=0.2,
+                    system_instruction=system_instruction,
+                )
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config=config,
+                )
+                if response and response.text:
+                    return response.text
+            except Exception as e:
+                last_error = e
+
+            # 2. REST API fallback for this model
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.gemini_api_key}"
+                payload = {
+                    "contents": [{"parts": [{"text": (system_instruction + "\n\n" if system_instruction else "") + prompt}]}],
+                    "generationConfig": {"temperature": 0.2}
+                }
+                res = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=60)
+                if res.status_code == 200:
+                    data = res.json()
+                    return data["candidates"][0]["content"]["parts"][0]["text"]
+                last_error = f"HTTP {res.status_code}: {res.text}"
+            except Exception as e:
+                last_error = e
+
+        raise RuntimeError(f"All Gemini models failed: {last_error}")
 
     def _call_anthropic(self, prompt: str, system_instruction: Optional[str] = None) -> str:
         """

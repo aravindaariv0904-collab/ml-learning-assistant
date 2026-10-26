@@ -479,7 +479,7 @@ where $n$ is sample size and $p$ is the number of features. It only increases if
                     self.state["completed_days"].append(day_num)
 
                 # Advance current_day to next uncompleted day (or stay at 30 if completed)
-                if not self.force_day:
+                if not self.force_day or day_num == self.state.get("current_day", 1):
                     next_day = day_num + 1 if day_num < self.state.get("total_days", 30) else 30
                     self.state["current_day"] = next_day
             else:

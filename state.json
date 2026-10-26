@@ -1,0 +1,714 @@
+{
+  "version": "1.0.0",
+  "project_name": "30-Day Automated Machine Learning Daily Learning Assistant",
+  "current_day": 1,
+  "total_days": 30,
+  "completed_days": [],
+  "revision_flags": [],
+  "settings": {
+    "schedule_time_ist": "15:00",
+    "study_session_start_ist": "19:00",
+    "study_session_end_ist": "21:00",
+    "timezone": "Asia/Kolkata",
+    "model_fallback_order": [
+      "gemini",
+      "anthropic"
+    ],
+    "code_sandbox_timeout_seconds": 30
+  },
+  "roadmap": [
+    {
+      "day": 1,
+      "week": 1,
+      "topic": "Introduction to Machine Learning",
+      "track": "Foundations",
+      "slug": "day-01-introduction-to-machine-learning",
+      "learning_objectives": [
+        "Deconstruct the core taxonomy: Supervised, Unsupervised, Semi-supervised, and Reinforcement Learning",
+        "Formulate Mitchell's definition of machine learning: Task T, Performance P, Experience E",
+        "Analyze the inductive bias and generalization bounds across parametric vs non-parametric paradigms",
+        "Implement a foundational end-to-end learning verification script using NumPy and Scikit-Learn"
+      ],
+      "core_concepts": [
+        "Supervised vs Unsupervised",
+        "Inductive Bias",
+        "Generalization",
+        "Data Representation Matrices",
+        "Evaluation Baselines"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null,
+      "title": "Introduction to Machine Learning",
+      "module": "Foundations"
+    },
+    {
+      "day": 2,
+      "week": 1,
+      "topic": "Python for Machine Learning",
+      "track": "Foundations",
+      "slug": "day-02-python-for-machine-learning",
+      "learning_objectives": [
+        "Master vectorized SIMD array computations, striding, broadcasting, and memory layouts (C vs Fortran order) in NumPy",
+        "Manipulate structured dataFrames with Pandas: hierarchical indexing, memory optimization (downcasting), and vectorized string/datetime transformations",
+        "Implement efficient numerical matrix algebra: dot products, Frobenius norms, and singular value decomposition",
+        "Construct production visualization templates using Matplotlib Agg headless backend"
+      ],
+      "core_concepts": [
+        "NumPy Broadcasting",
+        "Memory Contiguity",
+        "Vectorized Array Math",
+        "Pandas Aggregations",
+        "Headless Matplotlib"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 3,
+      "week": 1,
+      "topic": "Data Cleaning and Preprocessing",
+      "track": "Foundations",
+      "slug": "day-03-data-cleaning-and-preprocessing",
+      "learning_objectives": [
+        "Diagnose missing data mechanisms: Missing Completely at Random (MCAR), Missing at Random (MAR), and Missing Not at Random (MNAR)",
+        "Implement iterative multivariate feature imputation (MICE) and KNN imputation with strict train/test isolation",
+        "Detect and treat statistical outliers using Z-scores, Interquartile Range (IQR), and Isolation Forests",
+        "Transform non-Gaussian skewed feature distributions via Box-Cox and Yeo-Johnson power transforms"
+      ],
+      "core_concepts": [
+        "Missingness Mechanisms",
+        "Multivariate Imputation",
+        "IQR & Outlier Bounds",
+        "Power Transformations",
+        "Data Quality Auditing"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 4,
+      "week": 1,
+      "topic": "Linear Regression",
+      "track": "Regression",
+      "slug": "day-04-linear-regression",
+      "learning_objectives": [
+        "Derive the closed-form Ordinary Least Squares normal equation: theta = (X^T X)^(-1) X^T y",
+        "Verify Gauss-Markov theorem conditions: linearity, homoscedasticity, uncorrelated errors, and exogeneity",
+        "Implement closed-form and iterative gradient-descent linear regressors in pure NumPy and Scikit-Learn",
+        "Analyze geometric projection of response vector y onto the column space of feature matrix X"
+      ],
+      "core_concepts": [
+        "Ordinary Least Squares (OLS)",
+        "Normal Equation",
+        "Gauss-Markov Assumptions",
+        "Orthogonal Projection",
+        "Residual Analysis"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 5,
+      "week": 1,
+      "topic": "Regression Evaluation Metrics",
+      "track": "Regression",
+      "slug": "day-05-regression-evaluation-metrics",
+      "learning_objectives": [
+        "Deconstruct MAE, MSE, RMSE, RMSLE, and MAPE: sensitivity to outliers and error penalty surfaces",
+        "Derive R-squared and Adjusted R-squared: penalizing redundant predictor additions against degrees of freedom",
+        "Diagnose residual diagnostic plots: Cook's distance, leverage points, Q-Q normality, and heteroscedasticity",
+        "Implement asymmetric business cost loss functions for regression evaluation"
+      ],
+      "core_concepts": [
+        "MAE vs RMSE Sensitivity",
+        "Adjusted R-squared",
+        "Cook's Distance",
+        "Heteroscedasticity Tests",
+        "Residual Normality"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 6,
+      "week": 1,
+      "topic": "Polynomial Regression",
+      "track": "Regression",
+      "slug": "day-06-polynomial-regression",
+      "learning_objectives": [
+        "Deconstruct expected test prediction error into irreducible error, squared bias, and model variance",
+        "Apply PolynomialFeatures and spline basis expansions to model complex non-linear relationships",
+        "Analyze Runge's phenomenon and high-degree polynomial oscillatory boundary instabilities",
+        "Plot empirical learning curves to diagnose underfitting vs overfitting regimes"
+      ],
+      "core_concepts": [
+        "Bias-Variance Decomposition",
+        "Polynomial Basis Expansion",
+        "Runge's Phenomenon",
+        "Learning Curves",
+        "Model Capacity"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 7,
+      "week": 1,
+      "topic": "Ridge, Lasso, and ElasticNet",
+      "track": "Regression",
+      "slug": "day-07-ridge-lasso-and-elasticnet",
+      "learning_objectives": [
+        "Formulate L1 (Lasso) and L2 (Ridge) penalized objective functions and geometric constraint surfaces",
+        "Explain why L1 penalty geometry induces exact coordinate sparsity while L2 induces continuous weight shrinkage",
+        "Implement ElasticNet balancing L1 feature selection and L2 collinear feature grouping properties",
+        "Automate penalty parameter selection with RidgeCV, LassoCV, and ElasticNetCV"
+      ],
+      "core_concepts": [
+        "L1 vs L2 Regularization",
+        "Coordinate Descent",
+        "Weight Decay",
+        "ElasticNet Convex Combination",
+        "Sparsity Induction"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 8,
+      "week": 2,
+      "topic": "Logistic Regression",
+      "track": "Classification",
+      "slug": "day-08-logistic-regression",
+      "learning_objectives": [
+        "Derive the logistic sigmoid function, log-odds (logit) formulation, and Bernoulli likelihood",
+        "Formulate the Binary Cross-Entropy (Log-Loss) convex cost function and gradient update equations",
+        "Extend binary logistic classification to Softmax Multinomial regression with L1/L2 penalties",
+        "Interpret model coefficients as multiplicative odds ratios for executive decision stakeholders"
+      ],
+      "core_concepts": [
+        "Sigmoid & Softmax",
+        "Log-Odds Transformation",
+        "Binary Cross-Entropy",
+        "Maximum Likelihood Estimation",
+        "Odds Ratio Interpretation"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 9,
+      "week": 2,
+      "topic": "K-Nearest Neighbors",
+      "track": "Classification",
+      "slug": "day-09-k-nearest-neighbors",
+      "learning_objectives": [
+        "Analyze geometric distance metrics: Euclidean, Manhattan, Minkowski, Cosine, and Mahalanobis",
+        "Explain the curse of dimensionality and why Euclidean distances converge in high-dimensional spaces",
+        "Benchmark brute-force distance queries against spatial partitioning trees (KD-Trees, Ball Trees)",
+        "Implement distance-weighted KNN with adaptive k selection and out-of-fold cross validation"
+      ],
+      "core_concepts": [
+        "Distance Metrics",
+        "Curse of Dimensionality",
+        "KD-Tree Space Partitioning",
+        "Instance-Based Non-Parametric Learning",
+        "Distance Weighting"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 10,
+      "week": 2,
+      "topic": "Naive Bayes",
+      "track": "Classification",
+      "slug": "day-10-naive-bayes",
+      "learning_objectives": [
+        "Derive Bayes' Theorem for posterior estimation: P(y|X) = [P(X|y) * P(y)] / P(X)",
+        "Examine the conditional feature independence assumption and its mathematical consequences",
+        "Implement Gaussian, Multinomial, and Bernoulli Naive Bayes variants with Laplace smoothing",
+        "Construct an enterprise spam categorization and text classification pipeline with TF-IDF features"
+      ],
+      "core_concepts": [
+        "Bayesian Inference",
+        "Conditional Independence Assumption",
+        "Laplace Smoothing",
+        "TF-IDF Vectorization",
+        "Zero-Frequency Hazard"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 11,
+      "week": 2,
+      "topic": "Support Vector Machines",
+      "track": "Classification",
+      "slug": "day-11-support-vector-machines",
+      "learning_objectives": [
+        "Derive the maximum margin hyperplane optimization problem maximizing geometric separation 2 / ||w||",
+        "Formulate soft-margin SVM with slack variables (C parameter) using Karush-Kuhn-Tucker (KKT) dual formulation",
+        "Apply the Kernel Trick via Mercer's theorem using RBF, Polynomial, and Sigmoid kernels",
+        "Calibrate gamma and C hyperparameters to balance decision boundary smoothness vs classification fidelity"
+      ],
+      "core_concepts": [
+        "Maximum Margin Hyperplane",
+        "Support Vectors",
+        "KKT Dual Formulation",
+        "Mercer's Theorem & RBF Kernel",
+        "Slack Variables"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 12,
+      "week": 2,
+      "topic": "Decision Trees",
+      "track": "Classification",
+      "slug": "day-12-decision-trees",
+      "learning_objectives": [
+        "Calculate Shannon Entropy, Information Gain (ID3), and Gini Impurity (CART) for recursive partitioning",
+        "Implement continuous covariate split-point optimization and surrogate splits for missing features",
+        "Prevent tree overfitting using pre-pruning (max_depth, min_samples_leaf) and post-pruning (Cost Complexity alpha)",
+        "Visualize hierarchical decision surfaces and verify scale invariance across monotonic transformations"
+      ],
+      "core_concepts": [
+        "Shannon Entropy",
+        "Gini Impurity",
+        "Recursive Binary Splitting",
+        "Cost Complexity Pruning",
+        "Monotonic Scale Invariance"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 13,
+      "week": 2,
+      "topic": "Random Forest",
+      "track": "Classification",
+      "slug": "day-13-random-forest",
+      "learning_objectives": [
+        "Derive variance reduction across ensembles of uncorrelated base estimators via bootstrap aggregation",
+        "Explain how random feature subspace sampling (mtry) decorrelates individual decision trees",
+        "Compute Out-of-Bag (OOB) error estimates as an embedded validation surrogate",
+        "Contrast Mean Decrease Impurity (MDI) with Permutation Feature Importance to avoid cardinality bias"
+      ],
+      "core_concepts": [
+        "Bootstrap Aggregation (Bagging)",
+        "Feature Subspace Sampling",
+        "Out-Of-Bag (OOB) Error",
+        "Tree Decorrelation",
+        "Permutation Feature Importance"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 14,
+      "week": 2,
+      "topic": "Classification Evaluation Metrics",
+      "track": "Classification",
+      "slug": "day-14-classification-evaluation-metrics",
+      "learning_objectives": [
+        "Deconstruct the Confusion Matrix into Precision, Recall, Specificity, Fall-out, and F-beta scores",
+        "Analyze Receiver Operating Characteristic (ROC-AUC) curves vs Precision-Recall (PR-AUC) dynamics under imbalance",
+        "Calibrate predicted probabilities using Platt Scaling (sigmoid) and Isotonic Regression",
+        "Optimize decision classification thresholds based on asymmetric operational cost-benefit matrices"
+      ],
+      "core_concepts": [
+        "Precision vs Recall Tradeoffs",
+        "ROC-AUC vs PR-AUC",
+        "F-beta Optimization",
+        "Probability Calibration (Brier Score)",
+        "Cost-Sensitive Thresholding"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 15,
+      "week": 3,
+      "topic": "Ensemble Learning, Bagging, and Voting",
+      "track": "Ensemble",
+      "slug": "day-15-ensemble-learning-bagging-voting",
+      "learning_objectives": [
+        "Analyze Condorcet's Jury Theorem and the theoretical mathematical power of ensemble aggregation",
+        "Compare Hard Voting (majority rule) vs Soft Voting (confidence-weighted probability averaging)",
+        "Implement Stacking (Stacked Generalization) with cross-validated out-of-fold meta-learners",
+        "Construct heterogeneous ensemble architectures blending linear, tree-based, and distance models"
+      ],
+      "core_concepts": [
+        "Condorcet's Jury Theorem",
+        "Hard vs Soft Voting",
+        "Stacking & Meta-Learners",
+        "Out-Of-Fold Blending",
+        "Heterogeneous Ensembles"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 16,
+      "week": 3,
+      "topic": "AdaBoost and Gradient Boosting",
+      "track": "Ensemble",
+      "slug": "day-16-adaboost-and-gradient-boosting",
+      "learning_objectives": [
+        "Derive AdaBoost exponential loss minimization and sequential sample weight updating formulas (SAMME)",
+        "Formulate Gradient Boosting as functional gradient descent optimization in function space",
+        "Derive negative gradient pseudo-residuals for arbitrary differentiable regression and classification losses",
+        "Apply learning rate shrinkage and stochastic subsampling to control sequential overfitting"
+      ],
+      "core_concepts": [
+        "Exponential Loss Optimization",
+        "Sequential Sample Reweighting",
+        "Functional Gradient Descent",
+        "Pseudo-Residuals",
+        "Shrinkage Rate"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 17,
+      "week": 3,
+      "topic": "XGBoost",
+      "track": "Ensemble",
+      "slug": "day-17-xgboost",
+      "learning_objectives": [
+        "Master the 2nd-order Taylor expansion objective (first-order gradients g_i and second-order hessians h_i)",
+        "Formulate optimal leaf weight calculations and split gain scoring with L1 (alpha) and L2 (lambda) penalties",
+        "Explain Exact Greedy vs Weighted Quantile Sketch approximate histogram split finding algorithms",
+        "Tune regularization hyperparameters: gamma (minimum split loss), colsample_bytree, and subsample"
+      ],
+      "core_concepts": [
+        "2nd-Order Taylor Approximation",
+        "Hessian-Weighted Objectives",
+        "Weighted Quantile Sketch",
+        "Sparsity-Aware Split Finding",
+        "Tree Regularization"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 18,
+      "week": 3,
+      "topic": "Train-Test Split and Cross-Validation",
+      "track": "Validation",
+      "slug": "day-18-train-test-split-and-cross-validation",
+      "learning_objectives": [
+        "Design robust validation topologies: K-Fold, Stratified K-Fold, GroupKFold, and TimeSeriesSplit",
+        "Identify data leakage vulnerability points during split generation and automated feature pipelines",
+        "Compute nested cross-validation to produce unbiased generalization error estimates during model selection",
+        "Construct out-of-fold prediction matrices for stacked generalization and performance audits"
+      ],
+      "core_concepts": [
+        "K-Fold & Stratified CV",
+        "GroupKFold for Clustered Data",
+        "TimeSeriesSplit (Purging & Embargo)",
+        "Nested Cross-Validation",
+        "Out-Of-Fold Baselines"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 19,
+      "week": 3,
+      "topic": "Hyperparameter Tuning",
+      "track": "Validation",
+      "slug": "day-19-hyperparameter-tuning",
+      "learning_objectives": [
+        "Compare Grid Search, Randomized Search, and Sequential Model-Based Optimization (SMBO/Bayesian)",
+        "Formulate Tree-structured Parzen Estimators (TPE) modeling P(x|y) to sample high-performing parameters",
+        "Implement early trial pruning strategies using Hyperband and Median stopping algorithms in Optuna",
+        "Visualize hyperparameter importance, slice plots, and multi-objective Pareto frontiers"
+      ],
+      "core_concepts": [
+        "Grid vs Random Search",
+        "Bayesian Optimization (TPE)",
+        "Trial Pruning (Hyperband)",
+        "Optuna Search Spaces",
+        "Pareto Frontier Analysis"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 20,
+      "week": 3,
+      "topic": "K-Means Clustering",
+      "track": "Unsupervised",
+      "slug": "day-20-k-means-clustering",
+      "learning_objectives": [
+        "Derive Lloyd's Expectation-Maximization algorithm minimizing within-cluster sum of squares (Inertia)",
+        "Explain K-Means++ probabilistic seeding guarantees ($O(\\log k)$ approximation bound) against local minima",
+        "Determine optimal cluster count using the Elbow Method, Silhouette Analysis, and Davies-Bouldin index",
+        "Address spherical assumptions, sensitivity to variable scaling, and outlier vulnerability in K-Means"
+      ],
+      "core_concepts": [
+        "Within-Cluster Sum of Squares (Inertia)",
+        "K-Means++ Seeding",
+        "Silhouette Coefficient",
+        "Elbow Curve Diagnostics",
+        "Voronoi Tessellations"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 21,
+      "week": 3,
+      "topic": "Hierarchical Clustering, DBSCAN, and PCA",
+      "track": "Unsupervised",
+      "slug": "day-21-hierarchical-clustering-dbscan-pca",
+      "learning_objectives": [
+        "Construct Agglomerative Hierarchical trees with Ward, Complete, and Average linkage criteria and dendrograms",
+        "Formulate density-based spatial clustering (DBSCAN) using epsilon neighborhoods, core points, and noise classification",
+        "Derive Principal Component Analysis (PCA) via covariance matrix eigenvalue decomposition and SVD",
+        "Synthesize explained variance ratios and scree plots to project high-dimensional data onto orthogonal axes"
+      ],
+      "core_concepts": [
+        "Agglomerative Hierarchical & Ward Linkage",
+        "DBSCAN Density Reachability",
+        "PCA & Singular Value Decomposition",
+        "Scree Plots & Explained Variance",
+        "Noise Isolation"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 22,
+      "week": 4,
+      "topic": "Feature Engineering",
+      "track": "Pipelines",
+      "slug": "day-22-feature-engineering",
+      "learning_objectives": [
+        "Engineer domain features: non-linear interactions, polynomial ratios, binning, and rolling time aggregations",
+        "Encode high-cardinality categoricals: Target Encoding with smoothing, Weight of Evidence (WoE), and CatBoost encoding",
+        "Perform statistical feature selection: Mutual Information, ANOVA F-value, and Recursive Feature Elimination (RFE)",
+        "Enforce strict fit/transform encapsulation to guarantee zero leakage into validation sets"
+      ],
+      "core_concepts": [
+        "Target Encoding & Smoothing",
+        "Weight of Evidence (WoE)",
+        "Mutual Information Scoring",
+        "Recursive Feature Elimination",
+        "Feature Interaction Synthesis"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 23,
+      "week": 4,
+      "topic": "Probability and Statistics Revision",
+      "track": "Foundations",
+      "slug": "day-23-probability-and-statistics-revision",
+      "learning_objectives": [
+        "Review probability fundamentals: Joint, Marginal, Conditional distributions, and Central Limit Theorem (CLT)",
+        "Execute parametric hypothesis testing: Student's t-test, ANOVA, and Chi-Square goodness-of-fit tests",
+        "Analyze covariance matrices, Pearson vs Spearman rank correlations, and confounding collinear variables",
+        "Synthesize statistical intuition behind loss functions, confidence intervals, and p-value interpretations"
+      ],
+      "core_concepts": [
+        "Central Limit Theorem",
+        "Hypothesis Testing (t-test/ANOVA)",
+        "Chi-Square Test",
+        "Rank Correlations",
+        "Statistical Inference in ML"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 24,
+      "week": 4,
+      "topic": "Machine Learning Pipelines",
+      "track": "Pipelines",
+      "slug": "day-24-machine-learning-pipelines",
+      "learning_objectives": [
+        "Construct enterprise Scikit-Learn Pipelines subclassing BaseEstimator and TransformerMixin",
+        "Design ColumnTransformer architectures routing numerical, categorical, and text streams concurrently",
+        "Integrate automated feature selection and estimator fitting into single immutable pipeline objects",
+        "Ensure pipeline reproducibility and clean parameter tuning via nested parameter grid notation"
+      ],
+      "core_concepts": [
+        "ColumnTransformer",
+        "Custom BaseEstimator Transformers",
+        "FeatureUnion Architecture",
+        "Atomic Pipeline Execution",
+        "Leakage-Proof Serialization"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 25,
+      "week": 4,
+      "topic": "Model Comparison and Error Analysis",
+      "track": "Evaluation",
+      "slug": "day-25-model-comparison-and-error-analysis",
+      "learning_objectives": [
+        "Perform statistical significance testing between model candidates using McNemar's Test and 5x2cv Paired t-test",
+        "Deconstruct residual and prediction error distributions across sub-populations and feature slices",
+        "Identify slice-based performance degradations, algorithmic fairness disparities, and edge failure cases",
+        "Compile automated model benchmarking leaderboards with latency, memory, and accuracy metrics"
+      ],
+      "core_concepts": [
+        "McNemar's Test",
+        "5x2cv Paired t-test",
+        "Subgroup Slice Analysis",
+        "Error Residual Decomposition",
+        "Model Champion-Challenger Audits"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 26,
+      "week": 4,
+      "topic": "Model Saving and Inference",
+      "track": "Production",
+      "slug": "day-26-model-saving-and-inference",
+      "learning_objectives": [
+        "Compare serialization formats: Joblib, Pickle, ONNX (Open Neural Network Exchange), and Treelite",
+        "Benchmark serialization security, memory footprint, cold-start latency, and cross-platform compatibility",
+        "Implement high-throughput batch inference and single-record low-latency scoring scripts",
+        "Validate input payload schemas and data type integrity before passing to serialized model objects"
+      ],
+      "core_concepts": [
+        "Joblib vs ONNX Runtime",
+        "Pickle Security Vulnerabilities",
+        "Cross-Platform Model Portability",
+        "Inference Latency Optimization",
+        "Batch vs Real-Time Scoring"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 27,
+      "week": 4,
+      "topic": "Deploying an ML Model Using FastAPI",
+      "track": "Production",
+      "slug": "day-27-deploying-an-ml-model-using-fastapi",
+      "learning_objectives": [
+        "Build an asynchronous, non-blocking REST API for real-time model inference using FastAPI and Uvicorn",
+        "Enforce strict input and output contract validation with Pydantic v2 schemas",
+        "Implement health check probes, dependency injection, and Prometheus inference latency metrics",
+        "Structure multi-stage Docker container specifications for zero-cost cloud microservice hosting"
+      ],
+      "core_concepts": [
+        "FastAPI Asynchronous Endpoints",
+        "Pydantic Schema Validation",
+        "Model Lifespan Startup Loading",
+        "Docker Containerization",
+        "Latency SLA Monitoring"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 28,
+      "week": 4,
+      "topic": "Regression Project",
+      "track": "Projects",
+      "slug": "day-28-regression-project",
+      "learning_objectives": [
+        "Execute an end-to-end industrial regression system: exploratory analysis, feature engineering, and modeling",
+        "Tune Ridge, ElasticNet, and LightGBM regressors with automated cross-validated hyperparameter sweeps",
+        "Conduct thorough residual diagnostics: heteroscedasticity, Cook's distance, and outlier influence tests",
+        "Deliver a complete production deployment artifact with verified inference metrics and documentation"
+      ],
+      "core_concepts": [
+        "End-to-End Regression Pipeline",
+        "Heteroscedasticity Mitigation",
+        "Ensemble Regressor Stacking",
+        "Production Packaging",
+        "Performance SLA Sign-off"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 29,
+      "week": 4,
+      "topic": "Classification Project",
+      "track": "Projects",
+      "slug": "day-29-classification-project",
+      "learning_objectives": [
+        "Build an end-to-end enterprise classification pipeline on an imbalanced operational dataset",
+        "Apply preprocessing, resampling strategies (SMOTE), and cost-sensitive threshold optimization",
+        "Benchmark XGBoost, Random Forest, and Calibrated Logistic Regression candidate models",
+        "Implement SHAP TreeExplainer to produce global feature importance and local individual prediction explanations"
+      ],
+      "core_concepts": [
+        "End-to-End Classification Pipeline",
+        "Cost-Sensitive Threshold Tuning",
+        "SHAP Waterfall Explanations",
+        "Model Champion Auditing",
+        "Deployment Verification"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    },
+    {
+      "day": 30,
+      "week": 4,
+      "topic": "Revision and Project Presentation",
+      "track": "Projects",
+      "slug": "day-30-revision-and-project-presentation",
+      "learning_objectives": [
+        "Synthesize the complete 30-day curriculum: foundations, regression, classification, ensembles, and MLOps",
+        "Conduct an advanced ML System Design interview simulation: scale, latency, drift monitoring, and tradeoffs",
+        "Review senior machine learning interview questions across all 4 weeks with architectural justifications",
+        "Finalize personal machine learning portfolio, presentation decks, and lifelong mastery roadmaps"
+      ],
+      "core_concepts": [
+        "30-Day Knowledge Graph Synthesis",
+        "ML System Design Tradeoffs",
+        "Continuous Integration for ML (CIML)",
+        "Production Readiness Certification",
+        "Executive Project Defense"
+      ],
+      "status": "pending",
+      "completed_at": null,
+      "delivery_record": null
+    }
+  ],
+  "execution_history": []
+}

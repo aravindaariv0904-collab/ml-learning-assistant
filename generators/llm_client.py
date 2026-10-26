@@ -1,70 +1,171 @@
 """
 Modular Multi-Provider LLM Client
-Supports Google Gemini (via google-genai SDK or REST) and Anthropic Claude SDK,
-with automatic fallback and structured output parsing.
+Supports OpenRouter (free tier models like gemini-2.0-flash, llama-3.3-70b, deepseek-r1),
+Google Gemini (via google-genai SDK or REST API), and Anthropic Claude SDK,
+with automatic fallback, multi-provider retry, and structured output parsing.
 """
 
 import json
 import logging
 import os
 import re
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+import requests
 
 logger = logging.getLogger("LLMClient")
 
 
 class LLMClient:
     """
-    Coordinates AI prompt completions across Gemini, Anthropic, or an intelligent
+    Coordinates AI prompt completions across OpenRouter, Gemini, Anthropic, or an intelligent
     deterministic fallback generator when API keys are not supplied.
     """
 
     def __init__(self):
+        self.openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+        self.openrouter_model = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free")
+
         self.gemini_api_key = os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY")
+        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
         self.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-        
-        # If AI_API_KEY is an Anthropic key (starts with sk-ant-)
         if os.getenv("AI_API_KEY", "").startswith("sk-ant-"):
             self.anthropic_api_key = os.getenv("AI_API_KEY")
 
-        self.primary_provider = self._determine_provider()
-        logger.info(f"LLM Client initialized with primary provider: {self.primary_provider}")
+        # Preferred provider override or auto-detect
+        self.preferred_provider = os.getenv("LLM_PROVIDER")
+        self.providers_order = self._determine_providers_order()
+        logger.info(f"LLM Client initialized with provider order: {self.providers_order}")
 
-    def _determine_provider(self) -> str:
-        if self.gemini_api_key:
-            return "gemini"
-        elif self.anthropic_api_key:
-            return "anthropic"
-        else:
-            logger.warning("No AI_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY found. Running in offline curriculum synthesis mode.")
-            return "offline"
+    def _determine_providers_order(self) -> List[str]:
+        """
+        Determines the priority order for LLM calls based on configured keys and preferences.
+        """
+        available = []
+
+        # If user explicitly preferred a provider:
+        if self.preferred_provider:
+            pref = self.preferred_provider.lower().strip()
+            if pref == "openrouter" and self.openrouter_api_key:
+                available.append("openrouter")
+            elif pref in ["gemini", "google"] and self.gemini_api_key:
+                available.append("gemini")
+            elif pref == "anthropic" and self.anthropic_api_key:
+                available.append("anthropic")
+
+        # Default order: openrouter (free tier) -> gemini -> anthropic
+        if self.openrouter_api_key and "openrouter" not in available:
+            available.append("openrouter")
+        if self.gemini_api_key and "gemini" not in available:
+            available.append("gemini")
+        if self.anthropic_api_key and "anthropic" not in available:
+            available.append("anthropic")
+
+        if not available:
+            logger.warning("No OPENROUTER_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY found. Running in offline curriculum mode.")
+            available.append("offline")
+
+        return available
+
+    @property
+    def primary_provider(self) -> str:
+        return self.providers_order[0] if self.providers_order else "offline"
 
     def generate_completion(self, prompt: str, system_instruction: Optional[str] = None) -> str:
         """
-        Sends completion request to primary provider with fallback mechanism.
+        Attempts completions across the provider fallback chain.
         """
-        if self.primary_provider == "gemini":
-            try:
-                return self._call_gemini(prompt, system_instruction)
-            except Exception as e:
-                logger.error(f"Gemini API call failed: {e}. Attempting fallback...")
-                if self.anthropic_api_key:
-                    return self._call_anthropic(prompt, system_instruction)
-                raise
+        errors = []
 
-        elif self.primary_provider == "anthropic":
-            try:
-                return self._call_anthropic(prompt, system_instruction)
-            except Exception as e:
-                logger.error(f"Anthropic API call failed: {e}. Attempting fallback...")
-                if self.gemini_api_key:
+        for provider in self.providers_order:
+            if provider == "openrouter":
+                try:
+                    logger.info(f"Calling OpenRouter (Model: {self.openrouter_model})...")
+                    return self._call_openrouter(prompt, system_instruction)
+                except Exception as e:
+                    logger.warning(f"OpenRouter attempt failed: {e}. Falling back to next provider...")
+                    errors.append(f"OpenRouter: {e}")
+
+            elif provider == "gemini":
+                try:
+                    logger.info(f"Calling Google Gemini API (Model: {self.gemini_model})...")
                     return self._call_gemini(prompt, system_instruction)
-                raise
+                except Exception as e:
+                    logger.warning(f"Gemini API attempt failed: {e}. Falling back to next provider...")
+                    errors.append(f"Gemini: {e}")
 
-        # If offline
+            elif provider == "anthropic":
+                try:
+                    logger.info("Calling Anthropic Claude API...")
+                    return self._call_anthropic(prompt, system_instruction)
+                except Exception as e:
+                    logger.warning(f"Anthropic attempt failed: {e}. Falling back to next provider...")
+                    errors.append(f"Anthropic: {e}")
+
+            elif provider == "offline":
+                return self._generate_offline_content(prompt)
+
+        # If all external providers failed, use offline deterministic fallback
+        logger.error(f"All LLM providers failed ({'; '.join(errors)}). Generating offline content.")
         return self._generate_offline_content(prompt)
 
+    def _call_openrouter(self, prompt: str, system_instruction: Optional[str] = None) -> str:
+        """
+        Calls OpenRouter API using OpenAI-compatible chat completions endpoint.
+        Supports free models (e.g. google/gemini-2.0-flash-exp:free, meta-llama/llama-3.3-70b-instruct:free).
+        """
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.openrouter_api_key}",
+            "HTTP-Referer": "https://github.com/aravindaariv0904-collab/ml-learning-assistant",
+            "X-Title": "30-Day Automated Machine Learning Daily Learning Assistant",
+            "Content-Type": "application/json"
+        }
+
+        messages = []
+        if system_instruction:
+            messages.append({"role": "system", "content": system_instruction})
+        messages.append({"role": "user", "content": prompt})
+
+        # Provide fallback models within OpenRouter in case a free model is rate-limited
+        free_models_fallback = [
+            self.openrouter_model,
+            "google/gemini-2.0-flash-exp:free",
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "deepseek/deepseek-r1:free",
+            "qwen/qwen-2.5-72b-instruct:free"
+        ]
+        # De-duplicate while preserving order
+        unique_models = list(dict.fromkeys(free_models_fallback))
+
+        payload = {
+            "model": self.openrouter_model,
+            "models": unique_models,
+            "messages": messages,
+            "temperature": 0.2
+        }
+
+        res = requests.post(url, headers=headers, json=payload, timeout=60)
+        res.raise_for_status()
+        data = res.json()
+
+        choices = data.get("choices", [])
+        if not choices:
+            raise ValueError(f"OpenRouter returned empty choices: {data}")
+
+        return choices[0]["message"]["content"]
+
     def _call_gemini(self, prompt: str, system_instruction: Optional[str] = None) -> str:
+        """
+        Calls Google Gemini API using google-genai SDK or REST API fallback.
+        """
         try:
             from google import genai
             from google.genai import types
@@ -75,16 +176,14 @@ class LLMClient:
                 system_instruction=system_instruction,
             )
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model=self.gemini_model,
                 contents=prompt,
                 config=config,
             )
             return response.text
         except Exception as e:
-            # Fallback to direct REST API if google-genai has versioning conflicts
             logger.warning(f"google-genai SDK call failed ({e}); falling back to Gemini REST API.")
-            import requests
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={self.gemini_api_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent?key={self.gemini_api_key}"
             payload = {
                 "contents": [{"parts": [{"text": (system_instruction + "\n\n" if system_instruction else "") + prompt}]}],
                 "generationConfig": {"temperature": 0.2}
@@ -95,6 +194,9 @@ class LLMClient:
             return data["candidates"][0]["content"]["parts"][0]["text"]
 
     def _call_anthropic(self, prompt: str, system_instruction: Optional[str] = None) -> str:
+        """
+        Calls Anthropic Claude API.
+        """
         import anthropic
         client = anthropic.Anthropic(api_key=self.anthropic_api_key)
         system = system_instruction or "You are an elite Lead ML Engineer and Systems Architect."
@@ -113,15 +215,20 @@ class LLMClient:
         Sequence: Intuition -> Mathematics & Formulas -> Algorithmic Steps ->
         Validated Python Code -> Common Pitfalls & Data Leakage Warnings -> 5 Real-world Interview Q&As.
         """
+        title = day_info.get("topic") or day_info.get("title", f"Day {day_info['day']}")
+        module = day_info.get("track") or day_info.get("module", "General")
+        objectives = day_info.get("learning_objectives", [])
+        concepts = day_info.get("core_concepts", [])
+
         prompt = f"""
-Create a rigorous, production-grade technical masterclass for Machine Learning Day {day_info['day']}: "{day_info['title']}".
-Module: {day_info['module']}
-Key Objectives: {', '.join(day_info['learning_objectives'])}
-Core Concepts: {', '.join(day_info['core_concepts'])}
+Create a rigorous, production-grade technical masterclass for Machine Learning Day {day_info['day']}: "{title}".
+Track/Module: {module}
+Key Objectives: {', '.join(objectives)}
+Core Concepts: {', '.join(concepts)}
 
 You must structure the lesson in high-fidelity Markdown following EXACTLY these 6 sections in order:
 
-# Day {day_info['day']}: {day_info['title']}
+# Day {day_info['day']}: {title}
 
 ## 1. Intuition & Real-World Mental Model
 Explain the core intuition with a memorable industrial engineering analogy (e.g., real estate pricing, finance, medical diagnostics, robotics). Explain what problem it solves that simpler methods fail at.
@@ -150,23 +257,26 @@ Format cleanly with standard Markdown headers and code blocks.
         """
         Stage 2: Generates structured 12-16 slide presentation JSON.
         """
+        title = day_info.get("topic") or day_info.get("title", f"Day {day_info['day']}")
+        module = day_info.get("track") or day_info.get("module", "General")
+
         prompt = f"""
-Based on the following ML lesson for Day {day_info['day']}: "{day_info['title']}", produce a structured JSON object representing 12 to 14 presentation slides.
+Based on the following ML lesson for Day {day_info['day']}: "{title}", produce a structured JSON object representing 12 to 14 presentation slides.
 
 Markdown summary of the day:
 {markdown_content[:2500]}
 
 Return ONLY a valid JSON object matching this schema without any markdown wrapping (no ```json ... ```):
 {{
-  "deck_title": "Day {day_info['day']}: {day_info['title']}",
-  "module": "{day_info['module']}",
+  "deck_title": "Day {day_info['day']}: {title}",
+  "module": "{module}",
   "day_number": {day_info['day']},
   "slides": [
     {{
       "slide_number": 1,
       "slide_type": "title",
-      "title": "{day_info['title']}",
-      "subtitle": "30-Day Automated Machine Learning Masterclass | Module: {day_info['module']}",
+      "title": "{title}",
+      "subtitle": "30-Day Automated Machine Learning Masterclass | Track: {module}",
       "bullets": []
     }},
     {{
@@ -205,7 +315,7 @@ Each slide must have:
         response_text = self.generate_completion(prompt)
         cleaned = re.sub(r"^```(?:json)?\n", "", response_text.strip(), flags=re.MULTILINE)
         cleaned = re.sub(r"\n```$", "", cleaned.strip(), flags=re.MULTILINE)
-        
+
         try:
             return json.loads(cleaned)
         except json.JSONDecodeError:
@@ -219,8 +329,9 @@ Each slide must have:
         """
         Stage 3: Generates 3-5 interactive multiple-choice quiz questions for HTML assessment.
         """
+        title = day_info.get("topic") or day_info.get("title", f"Day {day_info['day']}")
         prompt = f"""
-Generate 4 multiple-choice assessment questions for Day {day_info['day']}: "{day_info['title']}".
+Generate 4 multiple-choice assessment questions for Day {day_info['day']}: "{title}".
 Content excerpt:
 {markdown_content[:2000]}
 
@@ -254,8 +365,7 @@ Return ONLY a valid JSON array of questions without markdown wrapping:
 
     def _generate_offline_content(self, prompt: str) -> str:
         """
-        Deterministic, offline curriculum generator used if external AI API keys are not provided.
-        Produces full, high-grade markdown notes ensuring 100% testable pipelines.
+        Deterministic, offline curriculum generator fallback.
         """
         return """# Offline Generated Masterclass
 Content generated via deterministic offline fallback engine.
@@ -263,16 +373,20 @@ Content generated via deterministic offline fallback engine.
 
     def _generate_fallback_presentation_json(self, day_info: Dict[str, Any]) -> Dict[str, Any]:
         """Provides a complete 12-slide structured presentation payload."""
+        title = day_info.get("topic") or day_info.get("title", f"Day {day_info['day']}")
+        module = day_info.get("track") or day_info.get("module", "General")
+        objectives = day_info.get("learning_objectives", [])
+
         return {
-            "deck_title": f"Day {day_info['day']}: {day_info['title']}",
-            "module": day_info['module'],
+            "deck_title": f"Day {day_info['day']}: {title}",
+            "module": module,
             "day_number": day_info['day'],
             "slides": [
                 {
                     "slide_number": 1,
                     "slide_type": "title",
-                    "title": day_info['title'],
-                    "subtitle": f"30-Day Automated ML Sprint | Module: {day_info['module']}",
+                    "title": title,
+                    "subtitle": f"30-Day Automated ML Sprint | Track: {module}",
                     "bullets": []
                 },
                 {
@@ -280,7 +394,12 @@ Content generated via deterministic offline fallback engine.
                     "slide_type": "agenda",
                     "title": "Agenda & Session Objectives",
                     "subtitle": "Roadmap Breakdown",
-                    "bullets": day_info['learning_objectives']
+                    "bullets": objectives or [
+                        "Theoretical foundations and core intuition",
+                        "Mathematical formulation and objective loss",
+                        "Production-ready Python implementation",
+                        "Validation and data leakage mitigation"
+                    ]
                 },
                 {
                     "slide_number": 3,
@@ -288,7 +407,7 @@ Content generated via deterministic offline fallback engine.
                     "title": "Intuition & Theoretical Motivation",
                     "subtitle": "Why this algorithm matters",
                     "bullets": [
-                        f"Fundamental problem space addressed by {day_info['title']}.",
+                        f"Fundamental problem space addressed by {title}.",
                         "Contrast with naive heuristics and baseline estimators.",
                         "Core inductive bias and underlying assumptions.",
                         "Computational complexity profiles in training vs inference."
@@ -398,7 +517,7 @@ Content generated via deterministic offline fallback engine.
                     "title": "Executive Summary & Tomorrow's Preview",
                     "subtitle": "Mastery Verification Checklist",
                     "bullets": [
-                        f"Mastered core mathematical theory and code for {day_info['title']}.",
+                        f"Mastered core mathematical theory and code for {title}.",
                         "Code sandbox validated with zero runtime errors.",
                         "Next Session: Advance to subsequent curriculum milestone.",
                         "Action Item: Complete the interactive quiz and review slides."
@@ -408,10 +527,11 @@ Content generated via deterministic offline fallback engine.
         }
 
     def _generate_fallback_quiz_json(self, day_info: Dict[str, Any]) -> List[Dict[str, Any]]:
+        title = day_info.get("topic") or day_info.get("title", f"Day {day_info['day']}")
         return [
             {
                 "id": 1,
-                "question": f"In the context of {day_info['title']}, what is the primary risk of fitting preprocessing transformers on the full dataset before splitting?",
+                "question": f"In the context of {title}, what is the primary risk of fitting preprocessing transformers on the full dataset before splitting?",
                 "options": [
                     "It causes a fatal syntax error during model compilation.",
                     "It causes data leakage, artificially inflating validation performance and leading to production degradation.",

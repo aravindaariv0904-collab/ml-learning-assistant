@@ -22,6 +22,12 @@ import sys
 from typing import Dict, Any, Optional
 
 try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+try:
     import markdown
     def render_markdown(text: str) -> str:
         return markdown.markdown(text, extensions=["fenced_code", "tables"])

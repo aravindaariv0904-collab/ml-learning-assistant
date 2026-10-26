@@ -10,6 +10,12 @@ import os
 from typing import Dict, Any, Optional
 import requests
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 logger = logging.getLogger("SlackNotifier")
 
 
@@ -20,6 +26,8 @@ class SlackNotifier:
 
     def __init__(self):
         self.webhook_url = os.getenv("SLACK_WEBHOOK_URL")
+        self.bot_token = os.getenv("SLACK_BOT_TOKEN")
+        self.channel = os.getenv("SLACK_CHANNEL", "#ml-learning")
 
     def build_block_kit_payload(
         self,
@@ -196,8 +204,34 @@ class SlackNotifier:
             calendar_link=calendar_link
         )
 
+        # 1. Prefer Bot Token API if configured
+        if self.bot_token:
+            try:
+                res = requests.post(
+                    "https://slack.com/api/chat.postMessage",
+                    json={
+                        "channel": self.channel,
+                        "blocks": payload["blocks"],
+                        "text": f"📘 Day {day_info.get('day', 1):02d}: {day_info.get('title', '')} notes ready"
+                    },
+                    headers={
+                        "Authorization": f"Bearer {self.bot_token}",
+                        "Content-Type": "application/json; charset=utf-8"
+                    },
+                    timeout=15
+                )
+                data = res.json()
+                if data.get("ok"):
+                    logger.info(f"Successfully posted Slack notification via Bot Token to {self.channel}")
+                    return {"status": "sent", "provider": "slack_bot_api", "ts": data.get("ts")}
+                else:
+                    logger.warning(f"Slack Bot API returned error: {data.get('error')}. Trying webhook fallback...")
+            except Exception as e:
+                logger.warning(f"Slack Bot API call failed: {e}. Trying webhook fallback...")
+
+        # 2. Fallback to Incoming Webhook URL
         if not self.webhook_url:
-            logger.warning("SLACK_WEBHOOK_URL not configured. Simulating Slack dispatch.")
+            logger.warning("Neither valid SLACK_BOT_TOKEN nor SLACK_WEBHOOK_URL available. Simulating Slack dispatch.")
             return {
                 "status": "simulated",
                 "payload": payload

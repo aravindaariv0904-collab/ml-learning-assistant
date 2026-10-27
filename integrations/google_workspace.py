@@ -49,7 +49,8 @@ class GoogleWorkspaceManager:
         self.sa_key_raw = os.getenv("GCP_SA_KEY")
         self.recipient_email = os.getenv("RECIPIENT_EMAIL")
         self.delegated_user = os.getenv("GMAIL_DELEGATED_USER") or os.getenv("GMAIL_SENDER_EMAIL") or self.recipient_email
-        self.calendar_id = os.getenv("GOOGLE_CALENDAR_ID", "primary")
+        # Target user's personal calendar directly via RECIPIENT_EMAIL if GOOGLE_CALENDAR_ID is not explicitly set
+        self.calendar_id = os.getenv("GOOGLE_CALENDAR_ID") or os.getenv("RECIPIENT_EMAIL", "primary")
         self.drive_folder_id = os.getenv("GOOGLE_DRIVE_FOLDER_ID", None)
         self.tz = get_ist_timezone()
 
@@ -154,39 +155,48 @@ class GoogleWorkspaceManager:
 
         from googleapiclient.http import MediaFileUpload
 
-        folder = parent_folder_id or self.drive_folder_id
+        # Resolve target Google Drive folder ID to consume personal quota rather than service account root
+        folder = parent_folder_id or self.drive_folder_id or os.getenv("GOOGLE_DRIVE_FOLDER_ID")
         media = MediaFileUpload(local_path, mimetype=mime_type, resumable=True)
 
         try:
-            # Check for existing file to enforce idempotency
+            # Check for existing file in target folder to enforce idempotent replacement
             query = f"name = '{name}' and trashed = false"
             if folder:
                 query += f" and '{folder}' in parents"
 
-            response = self.drive_service.files().list(
-                q=query, spaces="drive", fields="files(id, name, webViewLink, webContentLink)"
-            ).execute()
+            list_params = {
+                "q": query,
+                "spaces": "drive",
+                "fields": "files(id, name, webViewLink, webContentLink)",
+                "supportsAllDrives": True,
+                "includeItemsFromAllDrives": True
+            }
+            response = self.drive_service.files().list(**list_params).execute()
             existing_files = response.get("files", [])
 
             if existing_files:
                 file_id = existing_files[0]["id"]
-                logger.info(f"Existing file found on Drive ({name}: {file_id}). Updating in place...")
+                logger.info(f"Existing file found on Drive in folder '{folder or 'root'}' ({name}: {file_id}). Updating in place...")
                 updated_file = self.drive_service.files().update(
                     fileId=file_id,
                     media_body=media,
-                    fields="id, name, webViewLink, webContentLink"
+                    fields="id, name, webViewLink, webContentLink",
+                    supportsAllDrives=True
                 ).execute()
                 file_metadata = updated_file
             else:
-                logger.info(f"Uploading new file to Drive: {name}")
+                logger.info(f"Uploading new file to Drive: {name} (target folder: {folder or 'root'})")
                 body = {"name": name}
                 if folder:
+                    # Explicitly assign parents to user's shared folder so personal quota is utilized
                     body["parents"] = [folder]
 
                 file_metadata = self.drive_service.files().create(
                     body=body,
                     media_body=media,
-                    fields="id, name, webViewLink, webContentLink"
+                    fields="id, name, webViewLink, webContentLink",
+                    supportsAllDrives=True
                 ).execute()
                 file_id = file_metadata.get("id")
 
@@ -195,7 +205,8 @@ class GoogleWorkspaceManager:
                 self.drive_service.permissions().create(
                     fileId=file_id,
                     body={"type": "anyone", "role": "reader"},
-                    fields="id"
+                    fields="id",
+                    supportsAllDrives=True
                 ).execute()
             except Exception as perm_err:
                 logger.warning(f"Note on sharing permission: {perm_err}")

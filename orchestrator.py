@@ -49,6 +49,7 @@ from generators.llm_client import LLMClient
 from generators.pptx_builder import PPTXBuilder
 from integrations.google_workspace import GoogleWorkspaceManager
 from integrations.slack_notifier import SlackNotifier
+from integrations.email_notifier import EmailNotifier
 
 # Configure production logging
 logging.basicConfig(
@@ -81,6 +82,7 @@ class LearningAssistantOrchestrator:
         self.sandbox = CodeSandboxValidator(timeout_seconds=30)
         self.pptx = PPTXBuilder()
         self.workspace = GoogleWorkspaceManager()
+        self.email = EmailNotifier()
         self.slack = SlackNotifier()
 
         # Jinja2 template setup
@@ -334,9 +336,10 @@ where $n$ is sample size and $p$ is the number of features. It only increases if
         logger.info(f"STARTING PIPELINE: Day {day_num:02d} — {title}")
         logger.info(f"============================================================")
 
-        # STAGE 1: Generate Pedagogical Notes
-        logger.info("[Stage 1/5] Synthesizing pedagogical lesson markdown...")
-        notes_markdown = self._generate_curriculum_markdown(target_day)
+        # STAGE 1: Canonical Masterclass Generation (2-Step Canonical Pipeline)
+        logger.info("[Stage 1/5] Synthesizing Canonical Daily Lesson Payload...")
+        canonical_payload = self.llm.generate_canonical_lesson_payload(target_day)
+        notes_markdown = self.llm.render_notes_markdown(canonical_payload)
 
         # Save raw markdown notes locally
         notes_path = os.path.join(self.DIST_NOTES_DIR, f"{slug}.md")
@@ -351,25 +354,32 @@ where $n$ is sample size and $p$ is the number of features. It only increases if
         if not validation_result["is_valid"]:
             logger.warning(f"Validation warnings: {validation_result.get('error_details')}")
 
-        # STAGE 3: Presentation JSON & Native PPTX Generation
-        logger.info("[Stage 3/5] Generating presentation payload & 16:9 widescreen PPTX...")
-        presentation_json = self.llm.generate_presentation_json(target_day, notes_markdown)
+        # STAGE 3: Presentation Generation (18-25 Slide Modern AI Learning Studio Specification)
+        logger.info("[Stage 3/5] Generating presentation deck adhering to Modern AI Learning Studio spec...")
+        presentation_payload = {
+            "deck_title": f"Day {day_num:02d}: {title}",
+            "module": target_day["module"],
+            "day_number": day_num,
+            "slides": canonical_payload.get("slides_spec", [])
+        }
         pptx_path = os.path.join(self.DIST_PPTX_DIR, f"{slug}.pptx")
-        self.pptx.build_deck(presentation_json, pptx_path)
+        self.pptx.build_deck(presentation_payload, pptx_path)
 
         # STAGE 4: Interactive HTML & Quiz Rendering
         logger.info("[Stage 4/5] Compiling interactive HTML lesson with Jinja2 & Tailwind...")
-        quiz_data = self.llm.generate_quiz_json(target_day, notes_markdown)
+        quiz_data = canonical_payload.get("assessment_quiz", [])
 
         # Render markdown to HTML for embedding
         content_html = render_markdown(notes_markdown)
 
-        template = self.jinja_env.get_template("lesson_template.html")
+        # Select modern template (lesson.html.j2 or lesson_template.html)
+        template_name = "lesson.html.j2" if os.path.exists(os.path.join(self.TEMPLATES_DIR, "lesson.html.j2")) else "lesson_template.html"
+        template = self.jinja_env.get_template(template_name)
         html_output = template.render(
             day=day_num,
             title=title,
             module=target_day["module"],
-            objectives=target_day.get("learning_objectives", []),
+            objectives=canonical_payload.get("learning_objectives", target_day.get("learning_objectives", [])),
             content_html=content_html,
             validation=validation_result,
             quiz=quiz_data,
@@ -382,7 +392,7 @@ where $n$ is sample size and $p$ is the number of features. It only increases if
         logger.info(f"Rendered interactive HTML lesson to: {html_path}")
 
         # STAGE 5: Multi-Channel Publishing & Cloud Integrations
-        logger.info("[Stage 5/5] Cloud Distribution (Google Drive, Calendar, Gmail, Slack)...")
+        logger.info("[Stage 5/5] Cloud Distribution (Google Drive, Calendar, Gmail/SMTP, Slack)...")
         drive_links = {"pptx_view_url": "", "md_view_url": ""}
         calendar_res = {"status": "skipped"}
         email_res = {"status": "skipped"}
@@ -402,7 +412,7 @@ where $n$ is sample size and $p$ is the number of features. It only increases if
                     day=day_num,
                     title=title,
                     module=target_day["module"],
-                    objectives=target_day.get("learning_objectives", []),
+                    objectives=canonical_payload.get("learning_objectives", target_day.get("learning_objectives", [])),
                     content_html=content_html,
                     validation=validation_result,
                     quiz=quiz_data,
@@ -424,17 +434,18 @@ where $n$ is sample size and $p$ is the number of features. It only increases if
             except Exception as e:
                 logger.error(f"Google Calendar scheduling step failed: {e}")
 
-            # 5c: Gmail Daily Learning Dispatch
+            # 5c: Reliable Free Email Delivery (SMTP with TLS/SSL & Direct Attachments)
             try:
-                email_res = self.workspace.send_daily_email(
+                email_res = self.email.send_launchpad_email(
                     day_info=target_day,
                     drive_links=drive_links,
                     html_preview_url=f"https://github.com/learn-ml/{slug}",
-                    validation_info=validation_result
+                    validation_info=validation_result,
+                    attachments=[pptx_path, notes_path]
                 )
-                logger.info(f"Email Dispatch: {email_res.get('status')}")
+                logger.info(f"Email Dispatch: {email_res.get('status')} (Provider: {email_res.get('provider', 'simulated')})")
             except Exception as e:
-                logger.error(f"Gmail dispatch step failed: {e}")
+                logger.error(f"Email dispatch step failed: {e}")
 
             # 5d: Slack Block Kit Notification
             try:

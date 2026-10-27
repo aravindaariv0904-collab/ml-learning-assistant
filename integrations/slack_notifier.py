@@ -194,7 +194,9 @@ class SlackNotifier:
         calendar_link: str = ""
     ) -> Dict[str, Any]:
         """
-        Dispatches Block Kit message to Slack webhook endpoint.
+        Dispatches Block Kit message to Slack.
+        Prefers SLACK_WEBHOOK_URL for zero-friction channel posting, with SLACK_BOT_TOKEN fallback.
+        Provides actionable recovery telemetry when channel_not_found or not_in_channel is encountered.
         """
         payload = self.build_block_kit_payload(
             day_info=day_info,
@@ -204,9 +206,28 @@ class SlackNotifier:
             calendar_link=calendar_link
         )
 
-        # 1. Prefer Bot Token API if configured
+        # 1. Preferred Route: Incoming Webhook (Zero-friction channel posting)
+        if self.webhook_url:
+            try:
+                logger.info("Dispatching Slack notification via preferred Incoming Webhook...")
+                res = requests.post(
+                    self.webhook_url,
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                    timeout=15
+                )
+                if res.status_code == 200:
+                    logger.info(f"Successfully posted Slack notification for Day {day_info.get('day')} via webhook.")
+                    return {"status": "sent", "provider": "slack_webhook", "code": 200}
+                else:
+                    logger.warning(f"Slack webhook returned status {res.status_code}: {res.text}. Attempting bot token if configured...")
+            except Exception as e:
+                logger.warning(f"Slack webhook request failed: {e}. Attempting bot token fallback...")
+
+        # 2. Secondary Route: Slack Bot Token API (chat.postMessage)
         if self.bot_token:
             try:
+                logger.info(f"Posting Slack message via Bot Token to channel: {self.channel}")
                 res = requests.post(
                     "https://slack.com/api/chat.postMessage",
                     json={
@@ -225,31 +246,32 @@ class SlackNotifier:
                     logger.info(f"Successfully posted Slack notification via Bot Token to {self.channel}")
                     return {"status": "sent", "provider": "slack_bot_api", "ts": data.get("ts")}
                 else:
-                    logger.warning(f"Slack Bot API returned error: {data.get('error')}. Trying webhook fallback...")
+                    error_code = data.get("error", "unknown_error")
+                    if error_code in ["channel_not_found", "not_in_channel", "channel_not_in_group"]:
+                        logger.error(
+                            "\n"
+                            "================================================================================\n"
+                            "⚠️  SLACK DELIVERY FAILURE RECOVERY TELEMETRY:\n"
+                            f"Slack API returned error '{error_code}' for target channel '{self.channel}'.\n\n"
+                            "To resolve this, choose one of two zero-friction paths:\n"
+                            f"  Option 1: Invite the bot directly into the channel. In Slack channel '{self.channel}', run:\n"
+                            "            /invite @ML Assitent\n"
+                            "            (or the exact name assigned to your Slack Bot User)\n"
+                            "  Option 2: Supply an Incoming Webhook URL in your .env or GitHub Secrets:\n"
+                            "            SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...\n"
+                            "            Webhooks bypass OAuth channel membership constraints completely.\n"
+                            "================================================================================\n"
+                        )
+                    else:
+                        logger.error(f"Slack Bot API returned error: {error_code} ({data.get('response_metadata')})")
+                    return {"status": "error", "error": error_code, "data": data}
             except Exception as e:
-                logger.warning(f"Slack Bot API call failed: {e}. Trying webhook fallback...")
+                logger.error(f"Slack Bot API request exception: {e}")
+                return {"status": "error", "error": str(e)}
 
-        # 2. Fallback to Incoming Webhook URL
-        if not self.webhook_url:
-            logger.warning("Neither valid SLACK_BOT_TOKEN nor SLACK_WEBHOOK_URL available. Simulating Slack dispatch.")
-            return {
-                "status": "simulated",
-                "payload": payload
-            }
-
-        try:
-            res = requests.post(
-                self.webhook_url,
-                json=payload,
-                headers={"Content-Type": "application/json"},
-                timeout=15
-            )
-            if res.status_code == 200:
-                logger.info(f"Successfully posted Slack notification for Day {day_info.get('day')}")
-                return {"status": "sent", "code": 200}
-            else:
-                logger.error(f"Slack webhook returned status {res.status_code}: {res.text}")
-                return {"status": "error", "code": res.status_code, "text": res.text}
-        except Exception as e:
-            logger.error(f"Failed to send Slack webhook notification: {e}")
-            return {"status": "error", "error": str(e)}
+        # 3. Neither configured or available
+        logger.warning("Neither valid SLACK_WEBHOOK_URL nor SLACK_BOT_TOKEN available. Simulating Slack dispatch.")
+        return {
+            "status": "simulated",
+            "payload": payload
+        }

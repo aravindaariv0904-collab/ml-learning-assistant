@@ -1052,6 +1052,11 @@ print(f"Non-zero Coefficients: {np.count_nonzero(model.coef_)}/{len(model.coef_)
                 f"**Architectural Defense:**\n{ans}\n\n---\n\n"
             )
 
+        # Precompute math strings to remain compatible with Python 3.11 (no backslashes in f-string expressions)
+        math_hypo = math_f.get("hypothesis") or r"\hat{y} = X \theta + \epsilon"
+        math_loss = math_f.get("loss_function") or r"\mathcal{L}(\theta) = \frac{1}{2n} \|X \theta - y\|_2^2 + \lambda \|\theta\|_2^2"
+        math_normal = math_f.get("normal_equation") or r"\theta^* = (X^T X + \lambda I)^{-1} X^T y"
+
         # Build 15-section comprehensive masterclass
         md_content = f"""# Day {day:02d}: {title}
 
@@ -1079,18 +1084,18 @@ Welcome to Day {day:02d} of the 30-Day Production Machine Learning Masterclass. 
 ## 3. Mathematical Formulation & Foundations
 The hypothesis expresses the conditional expectation of target response $y$ as a parameterized function of the feature matrix $X$:
 
-$${math_f.get('hypothesis', r'\hat{y} = X \theta + \epsilon')}$$
+$${math_hypo}$$
 
 The penalized empirical risk minimization objective balances data fidelity with $L_2$ parameter shrinkage:
 
-$${math_f.get('loss_function', r'\mathcal{L}(\theta) = \frac{1}{2n} \|X \theta - y\|_2^2 + \lambda \|\theta\|_2^2')}$$
+$${math_loss}$$
 
 ### Symbol Definitions & Matrix Dimensionality
 {symbols_table}
 
 Setting the gradient vector $\\nabla_\\theta \\mathcal{{L}}(\\theta) = 0$ yields the regularized normal equation:
 
-$${math_f.get('normal_equation', r'\theta^* = (X^T X + \lambda I)^{-1} X^T y')}$$
+$${math_normal}$$
 
 The addition of $\\lambda I$ guarantees that $(X^T X + \\lambda I)$ is strictly positive definite and invertible even under severe multicollinearity.
 

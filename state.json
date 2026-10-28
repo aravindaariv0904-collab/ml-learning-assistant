@@ -121,9 +121,11 @@
         "Power Transformations",
         "Data Quality Auditing"
       ],
-      "status": "pending",
+      "status": "failed_validation",
       "completed_at": null,
-      "delivery_record": null
+      "delivery_record": null,
+      "title": "Data Cleaning and Preprocessing",
+      "module": "Foundations"
     },
     {
       "day": 4,
@@ -759,6 +761,12 @@
       "title": "Python for Machine Learning",
       "timestamp": "2026-10-27T15:30:11.722266+00:00",
       "status": "success"
+    },
+    {
+      "day": 3,
+      "title": "Data Cleaning and Preprocessing",
+      "timestamp": "2026-10-28T16:13:31.843640+00:00",
+      "status": "needs_review"
     }
   ]
 }

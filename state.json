@@ -1257,16 +1257,16 @@
         "Executive Project Defense"
       ],
       "status": "completed",
-      "completed_at": "2026-11-26T19:13:51.917635+00:00",
+      "completed_at": "2026-11-27T19:07:59.419268+00:00",
       "delivery_record": {
-        "timestamp": "2026-11-26T19:13:51.917635+00:00",
+        "timestamp": "2026-11-27T19:07:59.419268+00:00",
         "validation_badge": "VERIFIED (0 errors)",
         "validation_passed": true,
         "drive_links": {
           "pptx_view_url": "",
           "md_view_url": ""
         },
-        "calendar_event_id": "8jheb8b7uvn9ri23dj2epebq9g",
+        "calendar_event_id": "ta2mp1sjdjrfn6c0k4s49it65s",
         "email_status": "simulated",
         "slack_status": "error",
         "artifacts": {
@@ -1470,6 +1470,12 @@
       "day": 30,
       "title": "Revision and Project Presentation",
       "timestamp": "2026-11-26T19:13:51.917635+00:00",
+      "status": "success"
+    },
+    {
+      "day": 30,
+      "title": "Revision and Project Presentation",
+      "timestamp": "2026-11-27T19:07:59.419268+00:00",
       "status": "success"
     }
   ]
